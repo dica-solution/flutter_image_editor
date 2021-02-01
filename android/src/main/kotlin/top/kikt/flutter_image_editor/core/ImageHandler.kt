@@ -20,16 +20,21 @@ import kotlin.math.min
 class ImageHandler(private val context: Context, private var bitmap: Bitmap) {
 
   fun handle(options: List<Option>) {
+    var newBitmap: Bitmap = bitmap;
     for (option in options) {
       when (option) {
-        is FlipOption -> bitmap = handleFlip(option)
-        is ClipOption -> bitmap = handleClip(option)
-        is RotateOption -> bitmap = handleRotate(option)
-        is ColorOption -> bitmap = handleColor(option)
-        is ScaleOption -> bitmap = handleScale(option)
-        is AddTextOpt -> bitmap = handleText(option)
-        is MixImageOpt -> bitmap = handleMixImage(option)
-        is DrawOption -> bitmap = bitmap.draw(option)
+        is FlipOption -> newBitmap = handleFlip(option)
+        is ClipOption -> newBitmap = handleClip(option)
+        is RotateOption -> newBitmap = handleRotate(option)
+        is ColorOption -> newBitmap = handleColor(option)
+        is ScaleOption -> newBitmap = handleScale(option)
+        is AddTextOpt -> newBitmap = handleText(option)
+        is MixImageOpt -> newBitmap = handleMixImage(option)
+        is DrawOption -> newBitmap = bitmap.draw(option)
+      }
+      if (bitmap != newBitmap) {
+        bitmap.recycle()
+        bitmap = newBitmap
       }
     }
   }

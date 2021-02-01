@@ -208,6 +208,7 @@ class FlutterImageEditorPlugin(private val registrar: Registrar) : MethodCallHan
     val imageHandler = ImageHandler(registrar.context(), bitmapWrapper.bitmap)
     imageHandler.handle(call.getOptions(bitmapWrapper))
     handle(imageHandler, call.getFormatOption(), outputMemory, resultHandler, call.getTarget())
+    bitmapWrapper.bitmap.recycle()
   }
 }
 
