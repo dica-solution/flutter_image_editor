@@ -42,7 +42,7 @@ object ConvertUtils {
           list.add(flipOption)
         }
         "clip" -> {
-          val clipOption = getClipOption(valueMap)
+          val clipOption = getClipRelativeOption(valueMap, bitmapWrapper.width, bitmapWrapper.height)
           list.add(clipOption)
         }
         "rotate" -> {
@@ -153,6 +153,18 @@ object ConvertUtils {
     val y = (optionMap["y"] as Number).toInt()
 
     return ClipOption(x, y, width, height)
+  }
+
+  private fun getClipRelativeOption(optionMap: Any?, rawWidth: Int, rawHeight: Int): ClipRelativeOption {
+    if (optionMap !is Map<*, *>) {
+      return ClipRelativeOption(0.0, 0.0, -1.0, -1.0)
+    }
+    val width = (optionMap["width"] as Number).toInt()
+    val height = (optionMap["height"] as Number).toInt()
+    val x = (optionMap["x"] as Number).toInt()
+    val y = (optionMap["y"] as Number).toInt()
+
+    return ClipRelativeOption(x/rawWidth.toDouble(), y/rawHeight.toDouble(), width/rawWidth.toDouble(), height/rawHeight.toDouble())
   }
 
   private fun getFlipOption(optionMap: Any?): FlipOption {

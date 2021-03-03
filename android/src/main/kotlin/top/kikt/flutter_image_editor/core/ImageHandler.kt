@@ -13,6 +13,7 @@ import java.io.ByteArrayOutputStream
 import java.io.FileOutputStream
 import java.io.OutputStream
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 
 /// create 2019-10-08 by cai
@@ -25,6 +26,7 @@ class ImageHandler(private val context: Context, private var bitmap: Bitmap) {
       when (option) {
         is FlipOption -> newBitmap = handleFlip(option)
         is ClipOption -> newBitmap = handleClip(option)
+        is ClipRelativeOption -> newBitmap = handleRelativeClip(option)
         is RotateOption -> newBitmap = handleRotate(option)
         is ColorOption -> newBitmap = handleColor(option)
         is ScaleOption -> newBitmap = handleScale(option)
@@ -81,16 +83,17 @@ class ImageHandler(private val context: Context, private var bitmap: Bitmap) {
   }
 
   private fun handleRotate(option: RotateOption): Bitmap {
-    val tmpBitmap = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(tmpBitmap)
-    val matrix = Matrix().apply {
-      //      val rotate = option.angle.toFloat() / 180 * Math.PI
-      this.postRotate(option.angle.toFloat())
-    }
-
-    val out = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-    canvas.drawBitmap(out, matrix, null)
-    return out
+    val matrix = Matrix()
+    matrix.postRotate(option.angle.toFloat())
+    return Bitmap.createBitmap(
+            bitmap,
+            0,
+            0,
+            bitmap.getWidth(),
+            bitmap.getHeight(),
+            matrix,
+            true
+    )
   }
 
   private fun handleFlip(option: FlipOption): Bitmap {
@@ -111,6 +114,14 @@ class ImageHandler(private val context: Context, private var bitmap: Bitmap) {
     val x = option.x
     val y = option.y
     return Bitmap.createBitmap(bitmap, x, y, option.width, option.height, null, false)
+  }
+
+  private fun handleRelativeClip(option: ClipRelativeOption): Bitmap {
+    val x = option.x
+    val y = option.y
+    val width = bitmap.width
+    val height = bitmap.height
+    return Bitmap.createBitmap(bitmap, (x*width).roundToInt(), (y*height).roundToInt(), (option.width*width).roundToInt(), (option.height*height).roundToInt(), null, false)
   }
 
   private fun handleColor(option: ColorOption): Bitmap {

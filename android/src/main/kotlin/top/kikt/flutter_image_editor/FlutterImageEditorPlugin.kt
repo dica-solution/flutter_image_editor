@@ -2,6 +2,7 @@ package top.kikt.flutter_image_editor
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.BitmapFactory.Options
 import androidx.exifinterface.media.ExifInterface
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -13,14 +14,12 @@ import top.kikt.flutter_image_editor.core.ImageHandler
 import top.kikt.flutter_image_editor.core.ImageMerger
 import top.kikt.flutter_image_editor.core.ResultHandler
 import top.kikt.flutter_image_editor.error.BitmapDecodeException
-import top.kikt.flutter_image_editor.option.FlipOption
-import top.kikt.flutter_image_editor.option.FormatOption
-import top.kikt.flutter_image_editor.option.MergeOption
-import top.kikt.flutter_image_editor.option.Option
+import top.kikt.flutter_image_editor.option.*
 import top.kikt.flutter_image_editor.util.ConvertUtils
 import java.io.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+
 
 class FlutterImageEditorPlugin(private val registrar: Registrar) : MethodCallHandler {
   companion object {
@@ -132,22 +131,75 @@ class FlutterImageEditorPlugin(private val registrar: Registrar) : MethodCallHan
     val src = getSrc()
 
     if (src != null) {
-      val bitmap = BitmapFactory.decodeFile(src)
+      val options = BitmapFactory.Options()
+      options.inJustDecodeBounds = true
+      BitmapFactory.decodeFile(src, options)
+      val width = options.outWidth;
+      val height = options.outHeight;
+      options.inSampleSize = calculateInSampleSize(options, 700, 700)
+      options.inJustDecodeBounds = false
+      val bitmap = BitmapFactory.decodeFile(src, options)
       val exifInterface = ExifInterface(src)
-      return wrapperBitmapWrapper(bitmap, exifInterface)
+      return wrapperBitmapWrapper(bitmap, exifInterface, width, height)
     }
 
     val memory = getMemory()
     if (memory != null) {
-      val bitmap = BitmapFactory.decodeByteArray(memory, 0, memory.count())
+      val options = BitmapFactory.Options()
+      options.inJustDecodeBounds = true
+      BitmapFactory.decodeByteArray(memory, 0, memory.count(), options)
+      val width = options.outWidth;
+      val height = options.outHeight;
+      options.inSampleSize = calculateInSampleSize(options, 700, 700)
+      options.inJustDecodeBounds = false
+      val bitmap = BitmapFactory.decodeByteArray(memory, 0, memory.count(), options)
+
       val exifInterface = ExifInterface(ByteArrayInputStream(memory))
-      return wrapperBitmapWrapper(bitmap, exifInterface)
+      return wrapperBitmapWrapper(bitmap, exifInterface, width, height)
     }
 
     throw BitmapDecodeException()
   }
 
-  private fun wrapperBitmapWrapper(bitmap: Bitmap, exifInterface: ExifInterface): BitmapWrapper {
+  private fun decodeSampledBitmapFromByteArray(byteArray: ByteArray, reqWidth: Int, reqHeight: Int): Bitmap {
+    // First decode with inJustDecodeBounds=true to check dimensions
+    val options = Options()
+    options.inJustDecodeBounds = true
+    BitmapFactory.decodeByteArray(byteArray, 0, byteArray.count(), options)
+    options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight)
+    options.inJustDecodeBounds = false
+    return BitmapFactory.decodeByteArray(byteArray, 0, byteArray.count(), options)
+  }
+
+  private fun decodeSampledBitmapFromResource(path: String?, reqWidth: Int, reqHeight: Int): Bitmap {
+    // First decode with inJustDecodeBounds=true to check dimensions
+    val options = Options()
+    options.inJustDecodeBounds = true
+    BitmapFactory.decodeFile(path, options)
+    options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight)
+    options.inJustDecodeBounds = false
+    return BitmapFactory.decodeFile(path, options)
+  }
+
+  private fun calculateInSampleSize(options: Options, reqWidth: Int, reqHeight: Int): Int {
+    val height = options.outHeight
+    val width = options.outWidth
+    var inSampleSize = 1
+    if (height > reqHeight || width > reqWidth) {
+      val halfHeight = height / 2
+      val halfWidth = width / 2
+
+      // Calculate the largest inSampleSize value that is a power of 2 and keeps both
+      // height and width larger than the requested height and width.
+      while (halfHeight / inSampleSize > reqHeight
+              && halfWidth / inSampleSize > reqWidth) {
+        inSampleSize *= 2
+      }
+    }
+    return inSampleSize
+  }
+
+  private fun wrapperBitmapWrapper(bitmap: Bitmap, exifInterface: ExifInterface, width: Int, height: Int): BitmapWrapper {
     var degree = 0
     var flipOption = FlipOption(horizontal = false)
 
@@ -179,7 +231,8 @@ class FlutterImageEditorPlugin(private val registrar: Registrar) : MethodCallHan
         flipOption = FlipOption(horizontal = true)
       }
     }
-    return BitmapWrapper(bitmap, degree, flipOption)
+
+    return BitmapWrapper(bitmap, degree, flipOption, width, height)
 
   }
 
@@ -212,4 +265,4 @@ class FlutterImageEditorPlugin(private val registrar: Registrar) : MethodCallHan
   }
 }
 
-data class BitmapWrapper(val bitmap: Bitmap, val degree: Int, val flipOption: FlipOption)
+data class BitmapWrapper(val bitmap: Bitmap, val degree: Int, val flipOption: FlipOption, val width: Int, val height: Int)
