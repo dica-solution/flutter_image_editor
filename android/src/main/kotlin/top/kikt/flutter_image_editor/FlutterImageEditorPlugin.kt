@@ -88,7 +88,6 @@ class FlutterImageEditorPlugin(private val registrar: Registrar) : MethodCallHan
     }
   }
 
-
   private fun handleMerge(call: MethodCall, resultHandler: ResultHandler, memory: Boolean) {
     val mergeOptionMap = call.argument<Any>("option") as Map<*, *>
     val mergeOption = MergeOption(mergeOptionMap)
@@ -140,7 +139,7 @@ class FlutterImageEditorPlugin(private val registrar: Registrar) : MethodCallHan
       options.inJustDecodeBounds = false
       val bitmap = BitmapFactory.decodeFile(src, options)
       val exifInterface = ExifInterface(src)
-      return wrapperBitmapWrapper(bitmap, exifInterface, width, height)
+      return wrapperBitmapWrapper(bitmap, exifInterface, options.inSampleSize)
     }
 
     val memory = getMemory()
@@ -155,7 +154,7 @@ class FlutterImageEditorPlugin(private val registrar: Registrar) : MethodCallHan
       val bitmap = BitmapFactory.decodeByteArray(memory, 0, memory.count(), options)
 
       val exifInterface = ExifInterface(ByteArrayInputStream(memory))
-      return wrapperBitmapWrapper(bitmap, exifInterface, width, height)
+      return wrapperBitmapWrapper(bitmap, exifInterface, options.inSampleSize)
     }
 
     throw BitmapDecodeException()
@@ -199,7 +198,7 @@ class FlutterImageEditorPlugin(private val registrar: Registrar) : MethodCallHan
     return inSampleSize
   }
 
-  private fun wrapperBitmapWrapper(bitmap: Bitmap, exifInterface: ExifInterface, width: Int, height: Int): BitmapWrapper {
+  private fun wrapperBitmapWrapper(bitmap: Bitmap, exifInterface: ExifInterface, scale: Int): BitmapWrapper {
     var degree = 0
     var flipOption = FlipOption(horizontal = false)
 
@@ -232,7 +231,7 @@ class FlutterImageEditorPlugin(private val registrar: Registrar) : MethodCallHan
       }
     }
 
-    return BitmapWrapper(bitmap, degree, flipOption, width, height)
+    return BitmapWrapper(bitmap, degree, flipOption, scale)
 
   }
 
@@ -265,4 +264,4 @@ class FlutterImageEditorPlugin(private val registrar: Registrar) : MethodCallHan
   }
 }
 
-data class BitmapWrapper(val bitmap: Bitmap, val degree: Int, val flipOption: FlipOption, val width: Int, val height: Int)
+data class BitmapWrapper(val bitmap: Bitmap, val degree: Int, val flipOption: FlipOption, val scale: Int)

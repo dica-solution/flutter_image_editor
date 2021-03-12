@@ -119,9 +119,9 @@ class ImageHandler(private val context: Context, private var bitmap: Bitmap) {
   private fun handleRelativeClip(option: ClipRelativeOption): Bitmap {
     val x = option.x
     val y = option.y
-    val width = bitmap.width
-    val height = bitmap.height
-    return Bitmap.createBitmap(bitmap, (x*width).roundToInt(), (y*height).roundToInt(), (option.width*width).roundToInt(), (option.height*height).roundToInt(), null, false)
+    return Bitmap.createBitmap(bitmap, x/option.scale, y/option.scale,
+            option.width/option.scale, option.height/option.scale,
+            null, false)
   }
 
   private fun handleColor(option: ColorOption): Bitmap {
